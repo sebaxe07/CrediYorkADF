@@ -1,0 +1,959 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "Crediyork"
+		},
+		"AzureBlobStorage1_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AzureBlobStorage1'"
+		},
+		"AzureSqlDatabase1_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'AzureSqlDatabase1'"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "crediserver.database.windows.net"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "credidb"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "crediserver"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureBlobStorage1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('AzureBlobStorage1_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlDatabase1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('AzureSqlDatabase1_properties_typeProperties_server')]",
+					"database": "[parameters('AzureSqlDatabase1_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('AzureSqlDatabase1_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('AzureSqlDatabase1_password')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CierreCSV')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureBlobStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "mcierre.csv",
+						"container": "datos"
+					},
+					"columnDelimiter": ";",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "CANO;CMES;CESTADO;CMODULO",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CierreSQL')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "cierre"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/HistorialCSV')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureBlobStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "MHISCAR.csv",
+						"container": "datos"
+					},
+					"columnDelimiter": ";",
+					"encodingName": "ISO-8859-1",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "HNIT;HTIPO;HNUM1;HTIPO2;HNUM2;HFECHA;HVR;HINT;HDESC;HCHE;HCHEFEC;HCHEVR;HCHEBAN;HREC;HCUOTAS;HPORC;HVRCUOTA;HDIASP;HTRAN;HUNO;HSALDOANT",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/aportes')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "aportes"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/aportesFinal')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "aportesfinal"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/empleadosCSV')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureBlobStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "mcliente.csv",
+						"container": "datos"
+					},
+					"columnDelimiter": ";",
+					"encodingName": "ISO-8859-1",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "NITCLI;NOMCLI;DVCLI;CODCLI;DIRCLI;TELCLI;CIUCLI;DPTOCLI;EMPCLI;FINGRCLI;FRETCLI;APORTECLI;FECAPCLI;PGCLI;SUBIRCLI;VRCUOTACLI;ESTADOCLI;SALARIOCLI;HIJOSCLI;CARGOCLI;EMAILCLI;SUELDOCLI;CONTRICLI;AREACLI",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/empleadosSQL')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "empleados"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/empresasCSV')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureBlobStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "MNEGOCIO.csv",
+						"container": "datos"
+					},
+					"columnDelimiter": ";",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "NCOD;NDESCRI;NDIR;NEMAIL;NCIUDAD;NCONSOM;NNIT;NNIT_CONTR",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/empresasSQL')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "empresas"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/historialNotas')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "historialNotas"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/historialRecibos')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "historialFinal"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/historialSQL')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "historial_prestamos"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/prestamosCSV')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureBlobStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "mdeuda.csv",
+						"container": "datos"
+					},
+					"columnDelimiter": ";",
+					"encodingName": "ISO-8859-1",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "NITDEU;FACTDEU;TIPODEU;FFADEU;VRDEU;ABODEU;FABDEU;FVEDEU;APLIDEU;TAPLIDEU;PORCDEU;CUOTATDEU;UNODEU;CUOTAPDEU;VRCUOTADEU;DIASPDEU;FGRACDEU",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/prestamosFinal')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "prestamosFinal"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/retirosFinal')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "retirosFinal"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CalculateHistory')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "historialSQL",
+								"type": "DatasetReference"
+							},
+							"name": "SourceHistorial"
+						},
+						{
+							"dataset": {
+								"referenceName": "aportes",
+								"type": "DatasetReference"
+							},
+							"name": "SourceAportes"
+						},
+						{
+							"dataset": {
+								"referenceName": "empleadosSQL",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "aportesFinal",
+								"type": "DatasetReference"
+							},
+							"name": "sink2"
+						},
+						{
+							"dataset": {
+								"referenceName": "historialRecibos",
+								"type": "DatasetReference"
+							},
+							"name": "sink3"
+						},
+						{
+							"dataset": {
+								"referenceName": "historialNotas",
+								"type": "DatasetReference"
+							},
+							"name": "sink4"
+						},
+						{
+							"dataset": {
+								"referenceName": "retirosFinal",
+								"type": "DatasetReference"
+							},
+							"name": "sink5"
+						}
+					],
+					"transformations": [
+						{
+							"name": "window1"
+						},
+						{
+							"name": "window2"
+						},
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "select1"
+						},
+						{
+							"name": "derivedColumn2"
+						},
+						{
+							"name": "split1"
+						},
+						{
+							"name": "select2"
+						},
+						{
+							"name": "select3"
+						},
+						{
+							"name": "split2"
+						},
+						{
+							"name": "select4"
+						},
+						{
+							"name": "select5"
+						},
+						{
+							"name": "join1"
+						},
+						{
+							"name": "derivedColumn3"
+						},
+						{
+							"name": "select6"
+						},
+						{
+							"name": "select7"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          tipo_prestamo as short,",
+						"          id_tipo as integer,",
+						"          id_prestamo as integer,",
+						"          fecha_creacion as date,",
+						"          valor as double,",
+						"          interes as double,",
+						"          nro_cuota as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> SourceHistorial",
+						"source(output(",
+						"          cod as integer,",
+						"          tipo_aporte as integer,",
+						"          id_tipo as integer,",
+						"          fecha_creacion as date,",
+						"          valor as double,",
+						"          total_anterior as double,",
+						"          total_aporte as double",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> SourceAportes",
+						"source(output(",
+						"          cod as short,",
+						"          nombre as string,",
+						"          cedula as string,",
+						"          telefono as integer,",
+						"          ciudad as string,",
+						"          departamento as string,",
+						"          empresa as short,",
+						"          fecha_creacion as date,",
+						"          fecha_retiro as date,",
+						"          total_aportes as integer,",
+						"          fecha_aporte as date,",
+						"          cuota_aporte as integer,",
+						"          activo as boolean",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"SourceHistorial window(over(id_prestamo),",
+						"     asc(fecha_creacion, true),",
+						"     nro_cuota = rowNumber()) ~> window1",
+						"SourceAportes window(over(cod),",
+						"     asc(fecha_creacion, true),",
+						"     PreviousCol = lag(total_aporte, 1, 0)) ~> window2",
+						"window2 derive(total_anterior = iif(\r",
+						"    tipo_aporte == 8,\r",
+						"    PreviousCol,\r",
+						"    total_anterior\r",
+						")) ~> derivedColumn1",
+						"derivedColumn1 select(mapColumn(",
+						"          cod,",
+						"          tipo_aporte,",
+						"          id_tipo,",
+						"          fecha_creacion,",
+						"          valor,",
+						"          total_anterior,",
+						"          total_aporte",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"select1 derive(total_aporte = iif(tipo_aporte == 7 && fecha_creacion >= toDate(\"2017-07-15\"), total_aporte, toDouble(iif(add(total_anterior, -valor) < 0, 0.0, toFloat(add(total_anterior, -valor)))))) ~> derivedColumn2",
+						"window1 split(tipo_prestamo == 4,",
+						"     disjoint: false) ~> split1@(recibos, notas)",
+						"split1@recibos select(mapColumn(",
+						"          id_historial_recibos = id_tipo,",
+						"          id_prestamo,",
+						"          fecha_creacion,",
+						"          valor,",
+						"          interes,",
+						"          nro_cuota",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"split1@notas select(mapColumn(",
+						"          id_historial_notas = id_tipo,",
+						"          id_prestamo,",
+						"          fecha_creacion,",
+						"          valor,",
+						"          interes,",
+						"          nro_cuota",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select3",
+						"select7 split(tipo_aporte == 7,",
+						"     disjoint: false) ~> split2@(aportes, retiros)",
+						"split2@aportes select(mapColumn(",
+						"          id_aporte = id_tipo,",
+						"          cod,",
+						"          fecha_creacion,",
+						"          valor,",
+						"          total_anterior,",
+						"          total_aporte,",
+						"          nombre_empleado",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select4",
+						"split2@retiros select(mapColumn(",
+						"          id_retiro = id_tipo,",
+						"          cod,",
+						"          nombre_empleado,",
+						"          fecha_creacion,",
+						"          valor,",
+						"          total_anterior,",
+						"          total_aporte",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select5",
+						"derivedColumn2, select6 join(cod == cod_empleado,",
+						"     joinType:'left',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> join1",
+						"join1 derive(nombre_empleado = iif(fecha_creacion >= join_date, nombre, \"NA\")) ~> derivedColumn3",
+						"source1 select(mapColumn(",
+						"          cod_empleado = cod,",
+						"          nombre,",
+						"          cedula,",
+						"          telefono,",
+						"          ciudad,",
+						"          departamento,",
+						"          empresa,",
+						"          join_date = fecha_creacion,",
+						"          fecha_retiro,",
+						"          total_aportes,",
+						"          fecha_aporte,",
+						"          cuota_aporte,",
+						"          activo",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select6",
+						"derivedColumn3 select(mapColumn(",
+						"          cod,",
+						"          tipo_aporte,",
+						"          id_tipo,",
+						"          fecha_creacion,",
+						"          valor,",
+						"          total_anterior,",
+						"          total_aporte,",
+						"          total_aportes,",
+						"          nombre_empleado",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select7",
+						"select4 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink2",
+						"select2 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink3",
+						"select3 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink4",
+						"select5 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink5"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/historialSQL')]",
+				"[concat(variables('factoryId'), '/datasets/aportes')]",
+				"[concat(variables('factoryId'), '/datasets/empleadosSQL')]",
+				"[concat(variables('factoryId'), '/datasets/aportesFinal')]",
+				"[concat(variables('factoryId'), '/datasets/historialRecibos')]",
+				"[concat(variables('factoryId'), '/datasets/historialNotas')]",
+				"[concat(variables('factoryId'), '/datasets/retirosFinal')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/RefactorCierre')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "CierreCSV",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "CierreSQL",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "select1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          CANO as integer,",
+						"          CMES as integer,",
+						"          CESTADO as string,",
+						"          CMODULO as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> source1",
+						"source1 select(mapColumn(",
+						"          year = CANO,",
+						"          month = CMES",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"select1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/CierreCSV')]",
+				"[concat(variables('factoryId'), '/datasets/CierreSQL')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/RefactorEmpleados')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "empleadosCSV",
+								"type": "DatasetReference"
+							},
+							"name": "TablaSQL"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "empleadosSQL",
+								"type": "DatasetReference"
+							},
+							"name": "saveToStorage"
+						}
+					],
+					"transformations": [
+						{
+							"name": "select"
+						},
+						{
+							"name": "actioRtoFalse"
+						},
+						{
+							"name": "ActivoBools"
+						},
+						{
+							"name": "FechaRetiro"
+						},
+						{
+							"name": "AportesCero"
+						},
+						{
+							"name": "CiudadyDept"
+						},
+						{
+							"name": "cast1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          NITCLI as integer,",
+						"          NOMCLI as string,",
+						"          DVCLI as boolean,",
+						"          CODCLI as boolean,",
+						"          DIRCLI as string,",
+						"          TELCLI as integer,",
+						"          CIUCLI as string,",
+						"          DPTOCLI as string,",
+						"          EMPCLI as short,",
+						"          FINGRCLI as date,",
+						"          FRETCLI as date,",
+						"          APORTECLI as integer,",
+						"          FECAPCLI as date,",
+						"          PGCLI as string,",
+						"          SUBIRCLI as short,",
+						"          VRCUOTACLI as integer,",
+						"          ESTADOCLI as string,",
+						"          SALARIOCLI as short,",
+						"          HIJOSCLI as boolean,",
+						"          CARGOCLI as string,",
+						"          EMAILCLI as string,",
+						"          SUELDOCLI as boolean,",
+						"          CONTRICLI as boolean,",
+						"          AREACLI as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> TablaSQL",
+						"TablaSQL select(mapColumn(",
+						"          cod = NITCLI,",
+						"          nombre = NOMCLI,",
+						"          cedula = DIRCLI,",
+						"          ciudad = CIUCLI,",
+						"          departamento = DPTOCLI,",
+						"          empresa = EMPCLI,",
+						"          fecha_creacion = FINGRCLI,",
+						"          fecha_retiro = FRETCLI,",
+						"          total_aportes = APORTECLI,",
+						"          fecha_aporte = FECAPCLI,",
+						"          cuota_aporte = VRCUOTACLI,",
+						"          activo = ESTADOCLI",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select",
+						"select derive(activo = iif(activo == 'R', \"false\", \"true\"),",
+						"          fecha_creacion = iif(cod == 229, toDate(\"2024-03-16\"), fecha_creacion)) ~> actioRtoFalse",
+						"actioRtoFalse cast(output(",
+						"          activo as boolean",
+						"     ),",
+						"     errors: true) ~> ActivoBools",
+						"ActivoBools derive(fecha_retiro = iif(activo, toDate(\"\"), fecha_retiro),",
+						"          fecha_creacion = iif(isNull(fecha_creacion), toDate(\"2015-05-05\"), fecha_creacion)) ~> FechaRetiro",
+						"FechaRetiro derive(total_aportes = iif(isNull(total_aportes), 0, total_aportes)) ~> AportesCero",
+						"AportesCero derive(ciudad = iif(isNull(ciudad) || ciudad == \"BAQ\", \"BARRANQUILLA\", ciudad),",
+						"          departamento = iif(isNull(departamento) || departamento == \"ATL\", \"ATLANTICO\", departamento),",
+						"          cargo = toString(null())) ~> CiudadyDept",
+						"CiudadyDept cast(output(",
+						"          total_aportes as double,",
+						"          cuota_aporte as double",
+						"     ),",
+						"     errors: true) ~> cast1",
+						"cast1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> saveToStorage"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/empleadosCSV')]",
+				"[concat(variables('factoryId'), '/datasets/empleadosSQL')]"
+			]
+		}
+	]
+}

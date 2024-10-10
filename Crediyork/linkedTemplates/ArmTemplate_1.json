@@ -1,0 +1,794 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "Crediyork"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/RefactorEmpresas')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "empresasCSV",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "empresasSQL",
+								"type": "DatasetReference"
+							},
+							"name": "save"
+						}
+					],
+					"transformations": [
+						{
+							"name": "select1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          NCOD as short,",
+						"          NDESCRI as string,",
+						"          NDIR as string,",
+						"          NEMAIL as string,",
+						"          NCIUDAD as string,",
+						"          NCONSOM as string,",
+						"          NNIT as string,",
+						"          NNIT_CONTR as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> source1",
+						"source1 select(mapColumn(",
+						"          ecod = NCOD,",
+						"          nombre = NDESCRI,",
+						"          direccion = NDIR,",
+						"          nit = NNIT",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"select1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> save"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/RefactorHistorial')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "HistorialCSV",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "aportes",
+								"type": "DatasetReference"
+							},
+							"name": "aportesSave"
+						},
+						{
+							"dataset": {
+								"referenceName": "historialSQL",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "select1"
+						},
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "cast1"
+						},
+						{
+							"name": "split1"
+						},
+						{
+							"name": "select2"
+						},
+						{
+							"name": "derivedColumn2"
+						},
+						{
+							"name": "select3"
+						},
+						{
+							"name": "filter1"
+						},
+						{
+							"name": "derivedColumn3"
+						},
+						{
+							"name": "derivedColumn4"
+						},
+						{
+							"name": "filter2"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          HNIT as integer,",
+						"          HTIPO as short,",
+						"          HNUM1 as integer,",
+						"          HTIPO2 as short,",
+						"          HNUM2 as integer,",
+						"          HFECHA as date,",
+						"          HVR as integer,",
+						"          HINT as double,",
+						"          HDESC as string,",
+						"          HCHE as boolean,",
+						"          HCHEFEC as date,",
+						"          HCHEVR as integer,",
+						"          HCHEBAN as string,",
+						"          HREC as string,",
+						"          HCUOTAS as short,",
+						"          HPORC as double,",
+						"          HVRCUOTA as integer,",
+						"          HDIASP as short,",
+						"          HTRAN as string,",
+						"          HUNO as string,",
+						"          HSALDOANT as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> source1",
+						"source1 select(mapColumn(",
+						"          cod = HNIT,",
+						"          HTIPO,",
+						"          HNUM1,",
+						"          HTIPO2,",
+						"          HNUM2,",
+						"          fecha_creacion = HFECHA,",
+						"          valor = HVR,",
+						"          interes = HINT,",
+						"          coutas = HCUOTAS,",
+						"          porcentaje = HPORC,",
+						"          valor_cuota_fija = HVRCUOTA,",
+						"          cobro_periodo = HDIASP,",
+						"          HSALDOANT",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"select1 derive(HSALDOANT = iif(isNull(HSALDOANT), \"0\", HSALDOANT)) ~> derivedColumn1",
+						"filter2 cast(output(",
+						"          valor as double,",
+						"          interes as double,",
+						"          valor_cuota_fija as double,",
+						"          HSALDOANT as double",
+						"     ),",
+						"     errors: true) ~> cast1",
+						"cast1 split(((HTIPO==4 || HTIPO==8) && HTIPO2==7),",
+						"     disjoint: false) ~> split1@(aportes, prestamos)",
+						"split1@aportes select(mapColumn(",
+						"          cod,",
+						"          tipo_aporte = HTIPO,",
+						"          id_tipo = HNUM1,",
+						"          fecha_creacion,",
+						"          valor,",
+						"          total_anterior = HSALDOANT",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"select2 derive(tipo_aporte = iif(tipo_aporte==4, 7, toInteger(tipo_aporte))) ~> derivedColumn2",
+						"filter1 select(mapColumn(",
+						"          tipo_prestamo = HTIPO,",
+						"          id_tipo = HNUM1,",
+						"          id_prestamo = HNUM2,",
+						"          fecha_creacion,",
+						"          valor,",
+						"          interes",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select3",
+						"split1@prestamos filter(HTIPO != 1 && HTIPO !=2) ~> filter1",
+						"select3 derive(nro_cuota = 0,",
+						"          interes = iif(isNull(interes), toDouble(0), interes)) ~> derivedColumn3",
+						"derivedColumn2 derive(total_aporte = iif(tipo_aporte == 7 && fecha_creacion >= toDate(\"2017-07-15\"), add(total_anterior, valor), toDouble(iif(add(total_anterior, -valor) < 0, 0.0, toFloat(add(total_anterior, -valor)))))) ~> derivedColumn4",
+						"derivedColumn1 filter(cod != 0) ~> filter2",
+						"derivedColumn4 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> aportesSave",
+						"derivedColumn3 sink(allowSchemaDrift: true,",
+						"     validateSchema: true,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/RefactorPrestamos')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "prestamosCSV",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						},
+						{
+							"dataset": {
+								"referenceName": "empleadosSQL",
+								"type": "DatasetReference"
+							},
+							"name": "source2"
+						},
+						{
+							"dataset": {
+								"referenceName": "historialRecibos",
+								"type": "DatasetReference"
+							},
+							"name": "source3"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "prestamosFinal",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "select1"
+						},
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "join1"
+						},
+						{
+							"name": "select2"
+						},
+						{
+							"name": "derivedColumn2"
+						},
+						{
+							"name": "select3"
+						},
+						{
+							"name": "join2"
+						},
+						{
+							"name": "select4"
+						},
+						{
+							"name": "aggregate1"
+						},
+						{
+							"name": "join3"
+						},
+						{
+							"name": "select5"
+						},
+						{
+							"name": "derivedColumn3"
+						},
+						{
+							"name": "cast1"
+						},
+						{
+							"name": "derivedColumn4"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          NITDEU as integer,",
+						"          FACTDEU as integer,",
+						"          TIPODEU as integer,",
+						"          FFADEU as date,",
+						"          VRDEU as integer,",
+						"          ABODEU as integer,",
+						"          FABDEU as date,",
+						"          FVEDEU as string,",
+						"          APLIDEU as string,",
+						"          TAPLIDEU as string,",
+						"          PORCDEU as double,",
+						"          CUOTATDEU as integer,",
+						"          UNODEU as integer,",
+						"          CUOTAPDEU as integer,",
+						"          VRCUOTADEU as integer,",
+						"          DIASPDEU as integer,",
+						"          FGRACDEU as date",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> source1",
+						"source(output(",
+						"          cod as integer,",
+						"          nombre as string,",
+						"          cedula as string,",
+						"          ciudad as string,",
+						"          departamento as string,",
+						"          empresa as short,",
+						"          fecha_creacion as date,",
+						"          fecha_retiro as date,",
+						"          total_aportes as double,",
+						"          fecha_aporte as date,",
+						"          cuota_aporte as double,",
+						"          activo as boolean",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source2",
+						"source(output(",
+						"          id_historial_recibos as integer,",
+						"          id_prestamo as integer,",
+						"          fecha_creacion as date,",
+						"          valor as double,",
+						"          interes as double,",
+						"          nro_cuota as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source3",
+						"source1 select(mapColumn(",
+						"          id_prestamo = FACTDEU,",
+						"          cod = NITDEU,",
+						"          fecha_creacion = FFADEU,",
+						"          valor_deuda = VRDEU,",
+						"          valor_abonado = ABODEU,",
+						"          fecha_ult_abono = FABDEU,",
+						"          porcentaje = PORCDEU,",
+						"          cuotas = CUOTATDEU,",
+						"          cuotas_pagadas = CUOTAPDEU,",
+						"          valor_cuota_fija = VRCUOTADEU,",
+						"          cobro_periodo = DIASPDEU,",
+						"          fecha_gracia = FGRACDEU",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"select1 derive(porcentaje = iif(isNull(porcentaje), toDouble(0), toDouble(porcentaje)),",
+						"          cuotas = iif(isNull(cuotas), 0, cuotas),",
+						"          cobro_periodo = iif(isNull(cobro_periodo), 0, cobro_periodo),",
+						"          cuotas_pagadas = iif(isNull(cuotas_pagadas), 0, cuotas_pagadas),",
+						"          valor_abonado = iif(isNull(valor_abonado), 0, valor_abonado)) ~> derivedColumn1",
+						"derivedColumn1, select2 join(cod == cod_empleado,",
+						"     joinType:'left',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> join1",
+						"source2 select(mapColumn(",
+						"          cod_empleado = cod,",
+						"          nombre,",
+						"          join_date = fecha_creacion",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"join1 derive(nombre_empleado = iif(fecha_creacion >= join_date, nombre, \"NA\")) ~> derivedColumn2",
+						"cast1 select(mapColumn(",
+						"          id_src = id_prestamo,",
+						"          cod,",
+						"          fecha_creacion,",
+						"          valor_deuda,",
+						"          valor_abonado,",
+						"          fecha_ult_abono,",
+						"          porcentaje,",
+						"          cuotas,",
+						"          cuotas_pagadas,",
+						"          valor_cuota_fija,",
+						"          cobro_periodo,",
+						"          fecha_gracia,",
+						"          nombre_empleado",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select3",
+						"select3, select4 join(id_src == id_prestamo_src,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> join2",
+						"source3 select(mapColumn(",
+						"          id_prestamo_src = id_prestamo,",
+						"          interes_src = interes,",
+						"          fecha_creacion_src = fecha_creacion",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select4",
+						"join2 aggregate(groupBy(id_prestamo_src = id_src),",
+						"     interes_src = sum(interes_src)) ~> aggregate1",
+						"select3, aggregate1 join(id_src == id_prestamo_src,",
+						"     joinType:'left',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> join3",
+						"join3 select(mapColumn(",
+						"          id_prestamo = id_src,",
+						"          cod,",
+						"          fecha_creacion,",
+						"          valor_deuda,",
+						"          valor_abonado,",
+						"          fecha_ult_abono,",
+						"          porcentaje,",
+						"          cuotas,",
+						"          cuotas_pagadas,",
+						"          valor_cuota_fija,",
+						"          cobro_periodo,",
+						"          fecha_gracia,",
+						"          nombre_empleado,",
+						"          interes = interes_src",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select5",
+						"select5 derive(interes = toDouble(iif(isNull(interes), 0, toInteger(interes))),",
+						"          valor_cuota_fija = iif(isNull(valor_cuota_fija), 0, toInteger(valor_cuota_fija))) ~> derivedColumn3",
+						"derivedColumn2 cast(output(",
+						"          fecha_creacion as timestamp,",
+						"          fecha_ult_abono as timestamp,",
+						"          fecha_gracia as timestamp",
+						"     ),",
+						"     errors: true) ~> cast1",
+						"derivedColumn3 derive(fecha_ult_abono = iif(valor_abonado == 0, toTimestamp(null()), fecha_ult_abono)) ~> derivedColumn4",
+						"derivedColumn4 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Main Pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "empleadoFactor",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "RefactorEmpleados",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"TablaSQL": {},
+									"saveToStorage": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "empresaFactor",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "empleadoFactor",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "RefactorEmpresas",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"save": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "historialFactor",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "empresaFactor",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "RefactorHistorial",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"aportesSave": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "calculateHistory",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "historialFactor",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "CalculateHistory",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"SourceHistorial": {},
+									"SourceAportes": {},
+									"source1": {},
+									"sink2": {},
+									"sink3": {},
+									"sink4": {},
+									"sink5": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "prestamosFactor",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "calculateHistory",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "RefactorPrestamos",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"source2": {},
+									"source3": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "cierreFactor",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "prestamosFactor",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "RefactorCierre",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-09-24T19:00:45Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/RefactorEmpresas')]",
+				"[concat(variables('factoryId'), '/dataflows/RefactorHistorial')]",
+				"[concat(variables('factoryId'), '/dataflows/RefactorPrestamos')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Refactor",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "RefactorEmpleados",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"TablaSQL": {},
+									"saveToStorage": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-09-18T00:48:53Z"
+			},
+			"dependsOn": []
+		}
+	]
+}
