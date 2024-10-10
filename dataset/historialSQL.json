@@ -1,0 +1,17 @@
+{
+	"name": "historialSQL",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureSqlDatabase1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "historial_prestamos"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

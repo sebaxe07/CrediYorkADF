@@ -1,0 +1,171 @@
+{
+	"name": "RefactorHistorial",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "HistorialCSV",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "aportes",
+						"type": "DatasetReference"
+					},
+					"name": "aportesSave"
+				},
+				{
+					"dataset": {
+						"referenceName": "historialSQL",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "select1"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "cast1"
+				},
+				{
+					"name": "split1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "derivedColumn2"
+				},
+				{
+					"name": "select3"
+				},
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "derivedColumn3"
+				},
+				{
+					"name": "derivedColumn4"
+				},
+				{
+					"name": "filter2"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          HNIT as integer,",
+				"          HTIPO as short,",
+				"          HNUM1 as integer,",
+				"          HTIPO2 as short,",
+				"          HNUM2 as integer,",
+				"          HFECHA as date,",
+				"          HVR as integer,",
+				"          HINT as double,",
+				"          HDESC as string,",
+				"          HCHE as boolean,",
+				"          HCHEFEC as date,",
+				"          HCHEVR as integer,",
+				"          HCHEBAN as string,",
+				"          HREC as string,",
+				"          HCUOTAS as short,",
+				"          HPORC as double,",
+				"          HVRCUOTA as integer,",
+				"          HDIASP as short,",
+				"          HTRAN as string,",
+				"          HUNO as string,",
+				"          HSALDOANT as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source1 select(mapColumn(",
+				"          cod = HNIT,",
+				"          HTIPO,",
+				"          HNUM1,",
+				"          HTIPO2,",
+				"          HNUM2,",
+				"          fecha_creacion = HFECHA,",
+				"          valor = HVR,",
+				"          interes = HINT,",
+				"          coutas = HCUOTAS,",
+				"          porcentaje = HPORC,",
+				"          valor_cuota_fija = HVRCUOTA,",
+				"          cobro_periodo = HDIASP,",
+				"          HSALDOANT",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 derive(HSALDOANT = iif(isNull(HSALDOANT), \"0\", HSALDOANT)) ~> derivedColumn1",
+				"filter2 cast(output(",
+				"          valor as double,",
+				"          interes as double,",
+				"          valor_cuota_fija as double,",
+				"          HSALDOANT as double",
+				"     ),",
+				"     errors: true) ~> cast1",
+				"cast1 split(((HTIPO==4 || HTIPO==8) && HTIPO2==7),",
+				"     disjoint: false) ~> split1@(aportes, prestamos)",
+				"split1@aportes select(mapColumn(",
+				"          cod,",
+				"          tipo_aporte = HTIPO,",
+				"          id_tipo = HNUM1,",
+				"          fecha_creacion,",
+				"          valor,",
+				"          total_anterior = HSALDOANT",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"select2 derive(tipo_aporte = iif(tipo_aporte==4, 7, toInteger(tipo_aporte))) ~> derivedColumn2",
+				"filter1 select(mapColumn(",
+				"          tipo_prestamo = HTIPO,",
+				"          id_tipo = HNUM1,",
+				"          id_prestamo = HNUM2,",
+				"          fecha_creacion,",
+				"          valor,",
+				"          interes",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select3",
+				"split1@prestamos filter(HTIPO != 1 && HTIPO !=2) ~> filter1",
+				"select3 derive(nro_cuota = 0,",
+				"          interes = iif(isNull(interes), toDouble(0), interes)) ~> derivedColumn3",
+				"derivedColumn2 derive(total_aporte = iif(tipo_aporte == 7 && fecha_creacion >= toDate(\"2017-07-15\"), add(total_anterior, valor), toDouble(iif(add(total_anterior, -valor) < 0, 0.0, toFloat(add(total_anterior, -valor)))))) ~> derivedColumn4",
+				"derivedColumn1 filter(cod != 0) ~> filter2",
+				"derivedColumn4 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     recreate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> aportesSave",
+				"derivedColumn3 sink(allowSchemaDrift: true,",
+				"     validateSchema: true,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     recreate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+			]
+		}
+	}
+}

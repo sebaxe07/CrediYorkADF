@@ -1,0 +1,65 @@
+{
+	"name": "RefactorEmpresas",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "empresasCSV",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "empresasSQL",
+						"type": "DatasetReference"
+					},
+					"name": "save"
+				}
+			],
+			"transformations": [
+				{
+					"name": "select1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          NCOD as short,",
+				"          NDESCRI as string,",
+				"          NDIR as string,",
+				"          NEMAIL as string,",
+				"          NCIUDAD as string,",
+				"          NCONSOM as string,",
+				"          NNIT as string,",
+				"          NNIT_CONTR as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source1 select(mapColumn(",
+				"          ecod = NCOD,",
+				"          nombre = NDESCRI,",
+				"          direccion = NDIR,",
+				"          nit = NNIT",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     recreate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> save"
+			]
+		}
+	}
+}

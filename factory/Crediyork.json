@@ -1,0 +1,9 @@
+{
+	"name": "Crediyork",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "03404e0b-3253-43a9-a1bf-382d6fdf6d57",
+		"tenantId": "bab0b679-bd5f-4fe8-b516-c6b8b317c782"
+	}
+}

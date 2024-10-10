@@ -1,0 +1,246 @@
+{
+	"name": "RefactorPrestamos",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "prestamosCSV",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				},
+				{
+					"dataset": {
+						"referenceName": "empleadosSQL",
+						"type": "DatasetReference"
+					},
+					"name": "source2"
+				},
+				{
+					"dataset": {
+						"referenceName": "historialRecibos",
+						"type": "DatasetReference"
+					},
+					"name": "source3"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "prestamosFinal",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "select1"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "join1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "derivedColumn2"
+				},
+				{
+					"name": "select3"
+				},
+				{
+					"name": "join2"
+				},
+				{
+					"name": "select4"
+				},
+				{
+					"name": "aggregate1"
+				},
+				{
+					"name": "join3"
+				},
+				{
+					"name": "select5"
+				},
+				{
+					"name": "derivedColumn3"
+				},
+				{
+					"name": "cast1"
+				},
+				{
+					"name": "derivedColumn4"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          NITDEU as integer,",
+				"          FACTDEU as integer,",
+				"          TIPODEU as integer,",
+				"          FFADEU as date,",
+				"          VRDEU as integer,",
+				"          ABODEU as integer,",
+				"          FABDEU as date,",
+				"          FVEDEU as string,",
+				"          APLIDEU as string,",
+				"          TAPLIDEU as string,",
+				"          PORCDEU as double,",
+				"          CUOTATDEU as integer,",
+				"          UNODEU as integer,",
+				"          CUOTAPDEU as integer,",
+				"          VRCUOTADEU as integer,",
+				"          DIASPDEU as integer,",
+				"          FGRACDEU as date",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source(output(",
+				"          cod as integer,",
+				"          nombre as string,",
+				"          cedula as string,",
+				"          ciudad as string,",
+				"          departamento as string,",
+				"          empresa as short,",
+				"          fecha_creacion as date,",
+				"          fecha_retiro as date,",
+				"          total_aportes as double,",
+				"          fecha_aporte as date,",
+				"          cuota_aporte as double,",
+				"          activo as boolean",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source2",
+				"source(output(",
+				"          id_historial_recibos as integer,",
+				"          id_prestamo as integer,",
+				"          fecha_creacion as date,",
+				"          valor as double,",
+				"          interes as double,",
+				"          nro_cuota as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source3",
+				"source1 select(mapColumn(",
+				"          id_prestamo = FACTDEU,",
+				"          cod = NITDEU,",
+				"          fecha_creacion = FFADEU,",
+				"          valor_deuda = VRDEU,",
+				"          valor_abonado = ABODEU,",
+				"          fecha_ult_abono = FABDEU,",
+				"          porcentaje = PORCDEU,",
+				"          cuotas = CUOTATDEU,",
+				"          cuotas_pagadas = CUOTAPDEU,",
+				"          valor_cuota_fija = VRCUOTADEU,",
+				"          cobro_periodo = DIASPDEU,",
+				"          fecha_gracia = FGRACDEU",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 derive(porcentaje = iif(isNull(porcentaje), toDouble(0), toDouble(porcentaje)),",
+				"          cuotas = iif(isNull(cuotas), 0, cuotas),",
+				"          cobro_periodo = iif(isNull(cobro_periodo), 0, cobro_periodo),",
+				"          cuotas_pagadas = iif(isNull(cuotas_pagadas), 0, cuotas_pagadas),",
+				"          valor_abonado = iif(isNull(valor_abonado), 0, valor_abonado)) ~> derivedColumn1",
+				"derivedColumn1, select2 join(cod == cod_empleado,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"source2 select(mapColumn(",
+				"          cod_empleado = cod,",
+				"          nombre,",
+				"          join_date = fecha_creacion",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"join1 derive(nombre_empleado = iif(fecha_creacion >= join_date, nombre, \"NA\")) ~> derivedColumn2",
+				"cast1 select(mapColumn(",
+				"          id_src = id_prestamo,",
+				"          cod,",
+				"          fecha_creacion,",
+				"          valor_deuda,",
+				"          valor_abonado,",
+				"          fecha_ult_abono,",
+				"          porcentaje,",
+				"          cuotas,",
+				"          cuotas_pagadas,",
+				"          valor_cuota_fija,",
+				"          cobro_periodo,",
+				"          fecha_gracia,",
+				"          nombre_empleado",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select3",
+				"select3, select4 join(id_src == id_prestamo_src,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join2",
+				"source3 select(mapColumn(",
+				"          id_prestamo_src = id_prestamo,",
+				"          interes_src = interes,",
+				"          fecha_creacion_src = fecha_creacion",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select4",
+				"join2 aggregate(groupBy(id_prestamo_src = id_src),",
+				"     interes_src = sum(interes_src)) ~> aggregate1",
+				"select3, aggregate1 join(id_src == id_prestamo_src,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join3",
+				"join3 select(mapColumn(",
+				"          id_prestamo = id_src,",
+				"          cod,",
+				"          fecha_creacion,",
+				"          valor_deuda,",
+				"          valor_abonado,",
+				"          fecha_ult_abono,",
+				"          porcentaje,",
+				"          cuotas,",
+				"          cuotas_pagadas,",
+				"          valor_cuota_fija,",
+				"          cobro_periodo,",
+				"          fecha_gracia,",
+				"          nombre_empleado,",
+				"          interes = interes_src",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select5",
+				"select5 derive(interes = toDouble(iif(isNull(interes), 0, toInteger(interes))),",
+				"          valor_cuota_fija = iif(isNull(valor_cuota_fija), 0, toInteger(valor_cuota_fija))) ~> derivedColumn3",
+				"derivedColumn2 cast(output(",
+				"          fecha_creacion as timestamp,",
+				"          fecha_ult_abono as timestamp,",
+				"          fecha_gracia as timestamp",
+				"     ),",
+				"     errors: true) ~> cast1",
+				"derivedColumn3 derive(fecha_ult_abono = iif(valor_abonado == 0, toTimestamp(null()), fecha_ult_abono)) ~> derivedColumn4",
+				"derivedColumn4 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     recreate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+			]
+		}
+	}
+}

@@ -1,0 +1,124 @@
+{
+	"name": "RefactorEmpleados",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "empleadosCSV",
+						"type": "DatasetReference"
+					},
+					"name": "TablaSQL"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "empleadosSQL",
+						"type": "DatasetReference"
+					},
+					"name": "saveToStorage"
+				}
+			],
+			"transformations": [
+				{
+					"name": "select"
+				},
+				{
+					"name": "actioRtoFalse"
+				},
+				{
+					"name": "ActivoBools"
+				},
+				{
+					"name": "FechaRetiro"
+				},
+				{
+					"name": "AportesCero"
+				},
+				{
+					"name": "CiudadyDept"
+				},
+				{
+					"name": "cast1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          NITCLI as integer,",
+				"          NOMCLI as string,",
+				"          DVCLI as boolean,",
+				"          CODCLI as boolean,",
+				"          DIRCLI as string,",
+				"          TELCLI as integer,",
+				"          CIUCLI as string,",
+				"          DPTOCLI as string,",
+				"          EMPCLI as short,",
+				"          FINGRCLI as date,",
+				"          FRETCLI as date,",
+				"          APORTECLI as integer,",
+				"          FECAPCLI as date,",
+				"          PGCLI as string,",
+				"          SUBIRCLI as short,",
+				"          VRCUOTACLI as integer,",
+				"          ESTADOCLI as string,",
+				"          SALARIOCLI as short,",
+				"          HIJOSCLI as boolean,",
+				"          CARGOCLI as string,",
+				"          EMAILCLI as string,",
+				"          SUELDOCLI as boolean,",
+				"          CONTRICLI as boolean,",
+				"          AREACLI as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> TablaSQL",
+				"TablaSQL select(mapColumn(",
+				"          cod = NITCLI,",
+				"          nombre = NOMCLI,",
+				"          cedula = DIRCLI,",
+				"          ciudad = CIUCLI,",
+				"          departamento = DPTOCLI,",
+				"          empresa = EMPCLI,",
+				"          fecha_creacion = FINGRCLI,",
+				"          fecha_retiro = FRETCLI,",
+				"          total_aportes = APORTECLI,",
+				"          fecha_aporte = FECAPCLI,",
+				"          cuota_aporte = VRCUOTACLI,",
+				"          activo = ESTADOCLI",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select",
+				"select derive(activo = iif(activo == 'R', \"false\", \"true\"),",
+				"          fecha_creacion = iif(cod == 229, toDate(\"2024-03-16\"), fecha_creacion)) ~> actioRtoFalse",
+				"actioRtoFalse cast(output(",
+				"          activo as boolean",
+				"     ),",
+				"     errors: true) ~> ActivoBools",
+				"ActivoBools derive(fecha_retiro = iif(activo, toDate(\"\"), fecha_retiro),",
+				"          fecha_creacion = iif(isNull(fecha_creacion), toDate(\"2015-05-05\"), fecha_creacion)) ~> FechaRetiro",
+				"FechaRetiro derive(total_aportes = iif(isNull(total_aportes), 0, total_aportes)) ~> AportesCero",
+				"AportesCero derive(ciudad = iif(isNull(ciudad) || ciudad == \"BAQ\", \"BARRANQUILLA\", ciudad),",
+				"          departamento = iif(isNull(departamento) || departamento == \"ATL\", \"ATLANTICO\", departamento),",
+				"          cargo = toString(null())) ~> CiudadyDept",
+				"CiudadyDept cast(output(",
+				"          total_aportes as double,",
+				"          cuota_aporte as double",
+				"     ),",
+				"     errors: true) ~> cast1",
+				"cast1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     recreate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> saveToStorage"
+			]
+		}
+	}
+}

@@ -1,0 +1,17 @@
+{
+	"name": "empresasSQL",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureSqlDatabase1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "empresas"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

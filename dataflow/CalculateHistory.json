@@ -1,0 +1,304 @@
+{
+	"name": "CalculateHistory",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "historialSQL",
+						"type": "DatasetReference"
+					},
+					"name": "SourceHistorial"
+				},
+				{
+					"dataset": {
+						"referenceName": "aportes",
+						"type": "DatasetReference"
+					},
+					"name": "SourceAportes"
+				},
+				{
+					"dataset": {
+						"referenceName": "empleadosSQL",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "aportesFinal",
+						"type": "DatasetReference"
+					},
+					"name": "sink2"
+				},
+				{
+					"dataset": {
+						"referenceName": "historialRecibos",
+						"type": "DatasetReference"
+					},
+					"name": "sink3"
+				},
+				{
+					"dataset": {
+						"referenceName": "historialNotas",
+						"type": "DatasetReference"
+					},
+					"name": "sink4"
+				},
+				{
+					"dataset": {
+						"referenceName": "retirosFinal",
+						"type": "DatasetReference"
+					},
+					"name": "sink5"
+				}
+			],
+			"transformations": [
+				{
+					"name": "window1"
+				},
+				{
+					"name": "window2"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "derivedColumn2"
+				},
+				{
+					"name": "split1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "select3"
+				},
+				{
+					"name": "split2"
+				},
+				{
+					"name": "select4"
+				},
+				{
+					"name": "select5"
+				},
+				{
+					"name": "join1"
+				},
+				{
+					"name": "derivedColumn3"
+				},
+				{
+					"name": "select6"
+				},
+				{
+					"name": "select7"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          tipo_prestamo as short,",
+				"          id_tipo as integer,",
+				"          id_prestamo as integer,",
+				"          fecha_creacion as date,",
+				"          valor as double,",
+				"          interes as double,",
+				"          nro_cuota as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> SourceHistorial",
+				"source(output(",
+				"          cod as integer,",
+				"          tipo_aporte as integer,",
+				"          id_tipo as integer,",
+				"          fecha_creacion as date,",
+				"          valor as double,",
+				"          total_anterior as double,",
+				"          total_aporte as double",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> SourceAportes",
+				"source(output(",
+				"          cod as short,",
+				"          nombre as string,",
+				"          cedula as string,",
+				"          telefono as integer,",
+				"          ciudad as string,",
+				"          departamento as string,",
+				"          empresa as short,",
+				"          fecha_creacion as date,",
+				"          fecha_retiro as date,",
+				"          total_aportes as integer,",
+				"          fecha_aporte as date,",
+				"          cuota_aporte as integer,",
+				"          activo as boolean",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source1",
+				"SourceHistorial window(over(id_prestamo),",
+				"     asc(fecha_creacion, true),",
+				"     nro_cuota = rowNumber()) ~> window1",
+				"SourceAportes window(over(cod),",
+				"     asc(fecha_creacion, true),",
+				"     PreviousCol = lag(total_aporte, 1, 0)) ~> window2",
+				"window2 derive(total_anterior = iif(\r",
+				"    tipo_aporte == 8,\r",
+				"    PreviousCol,\r",
+				"    total_anterior\r",
+				")) ~> derivedColumn1",
+				"derivedColumn1 select(mapColumn(",
+				"          cod,",
+				"          tipo_aporte,",
+				"          id_tipo,",
+				"          fecha_creacion,",
+				"          valor,",
+				"          total_anterior,",
+				"          total_aporte",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 derive(total_aporte = iif(tipo_aporte == 7 && fecha_creacion >= toDate(\"2017-07-15\"), total_aporte, toDouble(iif(add(total_anterior, -valor) < 0, 0.0, toFloat(add(total_anterior, -valor)))))) ~> derivedColumn2",
+				"window1 split(tipo_prestamo == 4,",
+				"     disjoint: false) ~> split1@(recibos, notas)",
+				"split1@recibos select(mapColumn(",
+				"          id_historial_recibos = id_tipo,",
+				"          id_prestamo,",
+				"          fecha_creacion,",
+				"          valor,",
+				"          interes,",
+				"          nro_cuota",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"split1@notas select(mapColumn(",
+				"          id_historial_notas = id_tipo,",
+				"          id_prestamo,",
+				"          fecha_creacion,",
+				"          valor,",
+				"          interes,",
+				"          nro_cuota",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select3",
+				"select7 split(tipo_aporte == 7,",
+				"     disjoint: false) ~> split2@(aportes, retiros)",
+				"split2@aportes select(mapColumn(",
+				"          id_aporte = id_tipo,",
+				"          cod,",
+				"          fecha_creacion,",
+				"          valor,",
+				"          total_anterior,",
+				"          total_aporte,",
+				"          nombre_empleado",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select4",
+				"split2@retiros select(mapColumn(",
+				"          id_retiro = id_tipo,",
+				"          cod,",
+				"          nombre_empleado,",
+				"          fecha_creacion,",
+				"          valor,",
+				"          total_anterior,",
+				"          total_aporte",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select5",
+				"derivedColumn2, select6 join(cod == cod_empleado,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"join1 derive(nombre_empleado = iif(fecha_creacion >= join_date, nombre, \"NA\")) ~> derivedColumn3",
+				"source1 select(mapColumn(",
+				"          cod_empleado = cod,",
+				"          nombre,",
+				"          cedula,",
+				"          telefono,",
+				"          ciudad,",
+				"          departamento,",
+				"          empresa,",
+				"          join_date = fecha_creacion,",
+				"          fecha_retiro,",
+				"          total_aportes,",
+				"          fecha_aporte,",
+				"          cuota_aporte,",
+				"          activo",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select6",
+				"derivedColumn3 select(mapColumn(",
+				"          cod,",
+				"          tipo_aporte,",
+				"          id_tipo,",
+				"          fecha_creacion,",
+				"          valor,",
+				"          total_anterior,",
+				"          total_aporte,",
+				"          total_aportes,",
+				"          nombre_empleado",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select7",
+				"select4 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     recreate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink2",
+				"select2 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     recreate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink3",
+				"select3 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     recreate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink4",
+				"select5 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     recreate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink5"
+			]
+		}
+	}
+}

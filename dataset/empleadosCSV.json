@@ -1,0 +1,30 @@
+{
+	"name": "empleadosCSV",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureBlobStorage1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "mcliente.csv",
+				"container": "datos"
+			},
+			"columnDelimiter": ";",
+			"encodingName": "ISO-8859-1",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "NITCLI;NOMCLI;DVCLI;CODCLI;DIRCLI;TELCLI;CIUCLI;DPTOCLI;EMPCLI;FINGRCLI;FRETCLI;APORTECLI;FECAPCLI;PGCLI;SUBIRCLI;VRCUOTACLI;ESTADOCLI;SALARIOCLI;HIJOSCLI;CARGOCLI;EMAILCLI;SUELDOCLI;CONTRICLI;AREACLI",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
